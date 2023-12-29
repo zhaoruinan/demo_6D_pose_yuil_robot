@@ -303,8 +303,8 @@ class Yuil_robot(object):
             print(e)
             return
     def xyz_to_joint_move(self,xyz,abc):
-        xyz = np.array([[0.801], [-0.123], [0.177]])
-        abc = np.array([-3.14, 0.0, -3.142])
+        #xyz = np.array([[0.801], [-0.123], [0.177]])
+        #abc = np.array([-3.14, 0.0, -3.142])
         #xyz = np.array([[0.601], [-0.323], [0.377]])
         #abc = np.array([-3.14, 0.0, 1.571])
         end = Frame.from_euler_3(abc, xyz)
