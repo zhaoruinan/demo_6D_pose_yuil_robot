@@ -1,5 +1,4 @@
-./data
-./demo_images
-./__pycache__/
-./__pycache__/*
+data/
+demo_images/
+__pycache__/
 

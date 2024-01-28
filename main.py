@@ -24,8 +24,8 @@ def test2():
     real_robot = Yuil_robot()
     xyz = np.array([[0.601], [-0.323], [0.377]])
     abc = np.array([-3.14, 0.0, 1.571])
-    #real_robot.go_home()
-    #time.sleep(10)
+    real_robot.go_home()
+    time.sleep(10)
 
 
     real_robot.gripper_close()

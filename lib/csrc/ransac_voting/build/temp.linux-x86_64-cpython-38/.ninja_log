@@ -1,0 +1,3 @@
+# ninja log v5
+0	5048	1706176748659642917	/home/zhuzhuxia/code/pv_net_docker/lib/csrc/ransac_voting/build/temp.linux-x86_64-cpython-38/src/ransac_voting_kernel.o	199cc5d4dd889fbc
+0	9116	1706176752728560813	/home/zhuzhuxia/code/pv_net_docker/lib/csrc/ransac_voting/build/temp.linux-x86_64-cpython-38/src/ransac_voting.o	d8fe4c9195dc5a5a

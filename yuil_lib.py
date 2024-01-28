@@ -128,7 +128,7 @@ class Yuil_robot(object):
         #print("servo_state: ",servo_state)
         try:
             #time.sleep(20)
-            self.nrc_lib.robot_movej(pos,50,0,80,80,self.robot_name)
+            self.nrc_lib.robot_movej(pos,100,0,80,80,self.robot_name)
             
             test = self.nrc_lib.set_current_mode(1,self.robot_name)
             run_state = self.nrc_lib.get_robot_running_state(self.robot_name)
