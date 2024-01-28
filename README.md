@@ -1,64 +1,38 @@
-# yuil_robot_python
+# demo_6D_pose_yuil_robot
 
 ![introduction](./assets/introduction.png)
-Camera intrinsic parameters matrix:
-[[812.41703757   0.         738.73620289]
- [  0.         810.31869773 339.889511  ]
- [  0.           0.           1.        ]]
-
-Camera distortion coefficients:
-[[ 0.04252043  0.05231824 -0.00314384 -0.00499403 -0.18527505]]
-
-www.autodl.com
-
-PyTorch  1.11.0
-Python  3.8(ubuntu20.04)
-Cuda  11.3
-
-wget -q https://repo.anaconda.com/miniconda/Miniconda3-py37_4.8.3-Linux-x86_64.sh &&     sh ./Miniconda3-py37_4.8.3-Linux-x86_64.sh -b -p /opt/conda &&     rm ./Miniconda3-py37_4.8.3-Linux-x86_64.sh &&     export PATH=$PATH:/opt/conda/bin &&     conda install conda-build
-conda init bash
-exit
-
-git clone https://gitlab.ruinan.top/zhaoruinan/pv_net_docker.git 
-cd pv_net_docker/
-apt install -yq         nano         sudo         wget         curl         build-essential         cmake         git         ca-certificates         python3.7         python3-pip         libjpeg-dev         zip         unzip         libpng-dev         libeigen3-dev         libglfw3-dev         libglfw3         libgoogle-glog-dev         libsuitesparse-dev         libatlas-base-dev
-apt update
-apt install libglfw3-dev
-apt install libglfw3
-apt install gcc-7 g++-7 libsm6 libxrender1 libfontconfig1 -y
-apt install -yq         nano         sudo         wget         curl         build-essential         cmake         git         ca-certificates         python3.7         python3-pip         libjpeg-dev         zip         unzip         libpng-dev         libeigen3-dev         libglfw3-dev         libglfw3         libgoogle-glog-dev         libsuitesparse-dev         libatlas-base-dev
-apt install libjpeg-dev         zip         unzip         libpng-dev         libeigen3-dev         libglfw3-dev         libglfw3         libgoogle-glog-dev         libsuitesparse-dev         libatlas-base-dev
-pip install -r requirements.txt
-pip install --user yacs==0.1.4 numpy==1.18.0 opencv-python tqdm==4.28.1 pycocotools==2.0.0 matplotlib==2.2.2 
-pip install --user Cython==0.28.2 yacs open3d-python==0.3.0.0 opencv-python pycocotools plyfile 
-conda install -c open3d-admin open3d
-pip install skimage
-pip install scikit-image
-cd  lib/csrc/ransac_voting/
-export CUDA_HOME="/usr/local/cuda-11.3"
-python setup.py build_ext --inplace
-conda install pytorch==1.12.1 torchvision==0.13.1 torchaudio==0.12.1 cudatoolkit=11.3 -c pytorch
-python setup.py build_ext --inplace
-cd ../nn
-python setup.py build_ext --inplace
-cd ../fps
-python setup.py build_ext --inplace
-cd ../..
-
-python train_net.py --cfg_file configs/linemod.yaml model mycat cls_type cat
+```
+# Prepare for demo code
 
 
-nvcc -V
-ln -s /root/autodl-tmp/LINEMOD linemod
-watch -n 1 nvidia-smi 
-docker system prune -a
+# Download demo code and run.
+git clone https://github.com/zhaoruinan/demo_6D_pose_yuil_robot.git
 
+docker pull ruinanzhao/pvnet-clean:latest
 
-conda activate oneposepp
-   35  cd  /opt/conda/envs/oneposepp/
-   36  ls
-   37  cd lib/python3.7/
-   38  ls
-   39  git clone https://github.com/hjwdzh/DeepLM.git
-   40  cd DeepLM/
-   41  ./example.sh
+sudo vim ~/.bashrc
+
+# add this lines,use "i" to edit
+export PVNET_DOCKER=ruinanzhao/pvnet-clean:latest
+export PVNET_GIT=$HOME/demo_6D_pose_yuil_robot  # update this with the directory of demo code
+source $PVNET_GIT/docker/setup_dev.bash
+
+# use ":wq" to save and exit
+source ~/.bashrc
+
+pvnet_docker # By this, a docker env will be run for demo code.
+
+# inside the docker container
+conda activate pvnet
+python run.py --type online2 --cfg_file configs/custom.yaml
+
+```
+
+# rebuild docker image
+```
+cd docker
+docker build . -t  ruinanzhao/pvnet-clean:latest
+```
+
+# 
+
