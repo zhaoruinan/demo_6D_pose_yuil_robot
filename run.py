@@ -413,8 +413,8 @@ def run_online2():
 
     torch.manual_seed(0)
     print(os.path.join(cfg.demo_path))
-    meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
-    demo_images = glob.glob(cfg.demo_path + '/*jpg')
+    #meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
+    #demo_images = glob.glob(cfg.demo_path + '/*jpg')
     network = make_network(cfg).cuda()
     print(cfg.model_dir)
     print(cfg.test.epoch)
