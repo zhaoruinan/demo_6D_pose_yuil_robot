@@ -10,8 +10,10 @@
 
 # Download demo code and run.
 git clone https://github.com/zhaoruinan/demo_6D_pose_yuil_robot.git
-
+cd demo_6D_pose_yuil_robot
+```
 # [Download  model for 6D pose estimation and put it in data/model/pvnet/custom/](https://hanyangackr0-my.sharepoint.com/:u:/g/personal/zhaoruinan_m365_hanyang_ac_kr/EWVFXd-XFYNOqhVaWqnsNAUB1Zu9GLUgmWWPTnCrlTbTiA?e=WQXyMC)
+```
 # get the latest image for pvnet docker env
 docker pull ruinanzhao/pvnet-clean:latest
 
