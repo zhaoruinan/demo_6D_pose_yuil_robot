@@ -6,7 +6,7 @@ import time
 import torch
 import platform
 import sys
-sys.path.append("/home/zhuzhuxia/code/pv_net_docker/yolov5/")
+sys.path.append("./yolov5/")
 from models.common import DetectMultiBackend
 from utils.torch_utils import select_device, smart_inference_mode
 from utils.plots import Annotator, colors, save_one_box
