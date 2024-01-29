@@ -1,6 +1,6 @@
 # demo_6D_pose_yuil_robot
 
-![introduction](./assets/introduction.png)
+
 ```
 # Prepare for demo code
 
@@ -34,5 +34,19 @@ cd docker
 docker build . -t  ruinanzhao/pvnet-clean:latest
 ```
 
-# 
+# generate dataset of object
+![datase](./assets/dataset.jpg)
+```
+# dataset directory
 
+git clone https://github.com/DLR-RM/BlenderProc
+cd BlenderProc/
+pip install blenderproc
+blenderproc download cc_textures resources/cctextures
+
+cp $HOME/demo_6D_pose_yuil_robot/bop_object_pose_sampling.py examples/datasets/bop_object_pose_sampling/main.py
+cp $HOME/demo_6D_pose_yuil_robot/milk_dataset.sh ./
+sudo chmod +x milk_dataset.sh
+./milk_dataset.sh
+```
+# train pvnet model for new object
