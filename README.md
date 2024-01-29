@@ -1,5 +1,8 @@
 # demo_6D_pose_yuil_robot
 
+| Before Manipulation    | After Manipulation |
+| -------- | ------- |
+| ![datase](./assets/1.jpg)   | ![datase](./assets/2.jpg)    |
 
 ```
 # Prepare for demo code
