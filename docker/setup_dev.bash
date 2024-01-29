@@ -9,7 +9,7 @@ pvnet_docker() {
     -v /etc/localtime:/etc/localtime:ro \
     -v /dev/input:/dev/input \
     -v "$HOME/docker_shared:$HOME/docker_shared" \
-    -v "$PVNET_GIT:$HOME/code/pv_net_docker" \
+    -v "$PVNET_GIT:$HOME/demo_6D_pose_yuil_robot" \
     --shm-size=4G \
     --workdir $HOME/ \
     --net=host \
