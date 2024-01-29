@@ -406,8 +406,12 @@ def run_online2():
     import sys
     yolo_worker = yolo()
     vid = cv2.VideoCapture(0) 
-    width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
-    height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
+    vid.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
+    vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    vid.set(cv2.CAP_PROP_FPS, 30)
+    #width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
+    #height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
+    width,height = 720,480
     size = (width, height)
     fourcc = cv2.VideoWriter_fourcc(*'XVID')
 
@@ -434,6 +438,9 @@ def run_online2():
         ret, frame = vid.read() 
         if ret==True:
 
+            print(frame.shape)
+            frame = cv2.resize(frame, (640, 480), 
+               interpolation = cv2.INTER_LINEAR)
             im_out, json_dumps=yolo_worker.process_yolo('RealSense', frame)
             cv2.imshow('im_out', im_out) 
       

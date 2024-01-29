@@ -2,7 +2,7 @@
 
 | Before Manipulation    | After Manipulation |
 | -------- | ------- |
-| ![datase](./assets/1.jpg)   | ![datase](./assets/2.jpg)    |
+| ![datase](./assets/1.png)   | ![datase](./assets/2.png)    |
 
 ```
 # Prepare for demo code

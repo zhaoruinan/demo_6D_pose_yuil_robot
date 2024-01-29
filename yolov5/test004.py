@@ -86,7 +86,8 @@ class yolo_processor():
         # Inference
         with self.dt[1]:
             visualize =  False
-            #print(im.shape)            
+            print("1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
+            print(im.shape)            
             pred, proto = self.model(im, augment=augment, visualize=visualize)[:2]
 
         # NMS

@@ -3,7 +3,7 @@ import cv2
   
   
 # define a video capture object 
-vid = cv2.VideoCapture(4) 
+vid = cv2.VideoCapture(0) 
 width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
 height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
 size = (width, height)
