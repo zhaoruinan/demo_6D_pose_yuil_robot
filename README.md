@@ -43,7 +43,8 @@ python run.py --type online2 --cfg_file configs/custom.yaml
 cd docker
 docker build . -t  ruinanzhao/pvnet-clean:latest
 ```
-
+# make sure the 3D model of an object
+![3dmodel](./assets/2.gif)
 # generate dataset of object
 ![datase](./assets/dataset.jpg)
 ```
