@@ -295,9 +295,12 @@ def run_demo():
     import matplotlib.pyplot as plt
     import matplotlib.patches as patches
     import cv2
+    #from yolov5.test005 import yolo_processor as yolo 
+    import sys
+    #yolo_worker = yolo()
     torch.manual_seed(0)
     #meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
-    demo_images = glob.glob(cfg.demo_path + '/*jpg')
+    cap = cv2.VideoCapture("demo.webm") 
     network = make_network(cfg).cuda()
     print(cfg.model_dir)
     print(cfg.test.epoch)
@@ -308,9 +311,12 @@ def run_demo():
 
     mean, std = np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225])
     
-    for demo_image in demo_images:
-        demo_image_ = np.array(Image.open(demo_image))    
-        demo_image = np.array(Image.open(demo_image)).astype(np.float32)
+    while (cap.isOpened()):
+        ret, frame = cap.read()
+        frame = cv2.resize(frame, (640, 480), 
+               interpolation = cv2.INTER_LINEAR)
+        #im_out, json_dumps=yolo_worker.process_yolo('RealSense', frame)
+        demo_image = frame
         inp = (((demo_image/255.)-mean)/std).transpose(2, 0, 1).astype(np.float32)
         inp = torch.Tensor(inp[None]).cuda()
         with torch.no_grad():
@@ -405,7 +411,8 @@ def run_online2():
     from yolov5.test004 import yolo_processor as yolo 
     import sys
     yolo_worker = yolo()
-    vid = cv2.VideoCapture(0) 
+    #vid = cv2.VideoCapture(0) 
+    vid = cv2.VideoCapture("demo.webm") 
     vid.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
     vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     vid.set(cv2.CAP_PROP_FPS, 30)
@@ -450,8 +457,8 @@ def run_online2():
             if cv2.waitKey(1) & 0xFF == ord('q'): 
                 break
 
-            demo_image_= im_out
-            demo_image = im_out.astype(np.float32)
+            demo_image_= frame
+            demo_image = frame.astype(np.float32)
             inp = (((demo_image/255.)-mean)/std).transpose(2, 0, 1).astype(np.float32)
             inp = torch.Tensor(inp[None]).cuda()
             with torch.no_grad():

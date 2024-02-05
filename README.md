@@ -60,4 +60,35 @@ cp $HOME/demo_6D_pose_yuil_robot/milk_dataset.sh ./
 sudo chmod +x milk_dataset.sh
 ./milk_dataset.sh
 ```
-# train pvnet model for new object
+# Training on the custom object for yolov5
+![det](./assets/det.gif)
+# Training on the custom object
+1. Process the dataset:
+```
+python run.py --type custom
+```
+2. Train:
+
+```
+python run.py --cfg_file configs/custom.yaml
+
+```
+
+3. Test trained pvnet model:
+```
+python run.py --type evaluate --cfg_file configs/custom.yaml
+
+```
+output:
+
+```
+2d projections metric: 1.0
+ADD metric: 0.3586
+5 cm 5 degree metric: 1.0
+mask ap70: 1.0
+
+```
+4. Test trained pvnet model with a video:
+```
+
+```

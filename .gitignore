@@ -3,3 +3,6 @@ demo_images/
 __pycache__/
 train_data/
 assets/Webcam/
+data/custom/*
+/yolov5/datasets/
+/yolov5/runs/
