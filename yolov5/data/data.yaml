@@ -1,0 +1,13 @@
+train: ../datasets/milk/train/images
+val: ../datasets/milk/valid/images
+test: .../datasets/milk/test/images
+
+nc: 2
+names: ['whh_milk', 'wz_milk']
+
+roboflow:
+  workspace: ruinan-zhao-mnjky
+  project: china_milk
+  version: 1
+  license: CC BY 4.0
+  url: https://universe.roboflow.com/ruinan-zhao-mnjky/china_milk/dataset/1
