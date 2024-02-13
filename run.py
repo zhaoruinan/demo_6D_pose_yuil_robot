@@ -231,6 +231,9 @@ def run_detector_pvnet():
     from lib.visualizers import make_visualizer
 
     network = make_network(cfg).cuda()
+    print(cfg.model_dir)
+    print(cfg.test.epoch)
+    load_network(network, cfg.model_dir, epoch=cfg.test.epoch)
     network.eval()
 
     data_loader = make_data_loader(cfg, is_train=False)
@@ -250,7 +253,7 @@ def visualize_ (output):
         #inp = img_utils.unnormalize_img(inp, mean, std).permute(1, 2, 0)
         #print(inp)
         kpt_2d = output['kpt_2d'][0].detach().cpu().numpy()
-       # print(kpt_2d)
+        #print(kpt_2d)
      #   img_id = int(batch['img_id'][0])
     #    anno = self.coco.loadAnns(self.coco.getAnnIds(imgIds=img_id))[0]
         K = np.array([[605.28 ,  0. ,325.73],
@@ -259,19 +262,27 @@ def visualize_ (output):
 #        K = np.array([[381.74 ,  0. ,318.055],
 #         [  0. ,381.74 ,235.08],
 #         [  0.  , 0. ,  1.]])
-        fps_3d = np.array([[4.442409135663183e-06, -0.007305943872779608, 0.006071927957236767], [0.04799924045801163, 0.004776963964104652, 0.0018356989603489637], [0.00589775713160634, 0.0054193842224776745, -0.009460913017392159], [0.007862349972128868, 0.007024947088211775, 0.006832438055425882], [0.03779765963554382, -0.00533895893022418, -0.0024005300365388393], [0.011210310272872448, -0.00533895893022418, -0.0021181150805205107], [0.00018627849931363016, -0.005619957111775875, -0.008048836141824722], [0.03464236110448837, 0.005619957111775875, 0.0018356989603489637]])
-        center_3d = np.array([0.024000072718565, 0.0, 0.0])
+        #fps_3d = np.array([[4.442409135663183e-06, -0.007305943872779608, 0.006071927957236767], [0.04799924045801163, 0.004776963964104652, 0.0018356989603489637], [0.00589775713160634, 0.0054193842224776745, -0.009460913017392159], [0.007862349972128868, 0.007024947088211775, 0.006832438055425882], [0.03779765963554382, -0.00533895893022418, -0.0024005300365388393], [0.011210310272872448, -0.00533895893022418, -0.0021181150805205107], [0.00018627849931363016, -0.005619957111775875, -0.008048836141824722], [0.03464236110448837, 0.005619957111775875, 0.0018356989603489637]])
+        fps_3d = np.array([[-2.467565983533859253e-02, -4.346641898155212402e-02, -1.404704991728067398e-02],
+[-2.490215934813022614e-02, 4.253591969609260559e-02, 1.541784964501857758e-02],
+[2.315844967961311340e-02, -4.204858094453811646e-02, 1.609643921256065369e-02],
+[2.216614037752151489e-02, 4.273251071572303772e-02, -1.433391962200403214e-02],
+[1.070148032158613205e-02, -3.149121999740600586e-02, -1.772985048592090607e-02],
+[-2.373323962092399597e-02, -2.307748049497604370e-02, 1.691528968513011932e-02],
+[-1.204913016408681870e-02, 3.013489022850990295e-02, -1.610564999282360077e-02],
+[2.352176047861576080e-02, 2.225551940500736237e-02, 1.459936983883380890e-02]])
+        center_3d = np.array([0.0, 0.0, 0.0])
         kpt_3d = np.concatenate([fps_3d, [center_3d]], axis=0)
         
         pose_pred = pvnet_pose_utils.pnp(kpt_3d, kpt_2d, K)
-        corner_3d = np.array([[ 7.543713e-08 ,-1.088813e-02 ,-9.500001e-03],
- [ 7.543713e-08 ,-1.088813e-02 , 9.500001e-03],
- [ 7.543713e-08 , 1.088813e-02,-9.500001e-03],
- [ 7.543713e-08 , 1.088813e-02,  9.500001e-03],
- [ 4.800007e-02 ,-1.088813e-02, -9.500001e-03],
- [ 4.800007e-02 ,-1.088813e-02,  9.500001e-03],
- [ 4.800007e-02 , 1.088813e-02, -9.500001e-03],
- [ 4.800007e-02 , 1.088813e-02,  9.500001e-03]])
+        corner_3d = np.array([[-0.02624396, -0.04361221, -0.01792065],
+ [-0.02624396, -0.04361221,  0.01792066],
+ [-0.02624396,  0.04361221, -0.01792065],
+ [-0.02624396,  0.04361221,  0.01792066],
+ [ 0.02624396, -0.04361221, -0.01792065],
+ [ 0.02624396, -0.04361221,  0.01792066],
+ [ 0.02624396,  0.04361221, -0.01792065],
+ [ 0.02624396,  0.04361221,  0.01792066]])
         #corner_3d = np.array(anno['corner_3d'])
         #corner_2d_gt = pvnet_pose_utils.project(corner_3d, K, pose_gt)
         corner_2d_pred = pvnet_pose_utils.project(corner_3d, K, pose_pred)
@@ -299,8 +310,8 @@ def run_demo():
     import sys
     #yolo_worker = yolo()
     torch.manual_seed(0)
-    #meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
-    cap = cv2.VideoCapture("demo.webm") 
+    meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
+    cap = cv2.VideoCapture("001.mp4") 
     network = make_network(cfg).cuda()
     print(cfg.model_dir)
     print(cfg.test.epoch)
@@ -412,7 +423,7 @@ def run_online2():
     import sys
     yolo_worker = yolo()
     #vid = cv2.VideoCapture(0) 
-    vid = cv2.VideoCapture("demo.webm") 
+    vid = cv2.VideoCapture("001.mp4") 
     vid.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
     vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     vid.set(cv2.CAP_PROP_FPS, 30)
@@ -489,6 +500,127 @@ def run_online2():
 #out.release()
 # Destroy all the windows 
     cv2.destroyAllWindows() 
+
+def run_online3():
+    from lib.datasets import make_data_loader
+    from lib.visualizers import make_visualizer
+    import tqdm
+    import torch
+    from lib.networks import make_network
+    from lib.utils.net_utils import load_network
+    import glob
+    from PIL import Image
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+    import cv2
+    import imagezmq
+    import json
+    #vid = cv2.VideoCapture(0) 
+    vid = cv2.VideoCapture("004.mp4") 
+    torch.manual_seed(0)
+    print(os.path.join(cfg.demo_path))
+    #meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
+    demo_images = glob.glob(cfg.demo_path + '/*jpg')
+    network = make_network(cfg).cuda()
+    print(cfg.model_dir)
+    print(cfg.test.epoch)
+    load_network(network, cfg.model_dir, epoch=cfg.test.epoch)
+    network.eval()
+
+    visualizer = make_visualizer(cfg)
+
+    mean, std = np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225])
+    
+    while True:
+        ret, frame = vid.read() 
+        frame = cv2.resize(frame, (640, 480), 
+               interpolation = cv2.INTER_LINEAR)
+        demo_image_= frame
+        demo_image = frame.astype(np.float32)
+        inp = (((demo_image/255.)-mean)/std).transpose(2, 0, 1).astype(np.float32)
+        #print(inp)
+        inp = torch.Tensor(inp[None]).cuda()
+        with torch.no_grad():
+            output = network(inp)
+        print(output)
+        corner_2d_pred,pose_pred =visualize_(output)
+        corner_2d_pred = np.int32(corner_2d_pred)
+        points1 = np.array([corner_2d_pred[5],corner_2d_pred[4],corner_2d_pred[6],corner_2d_pred[7],corner_2d_pred[5],corner_2d_pred[1],corner_2d_pred[3],corner_2d_pred[7]])
+        points2 = np.array([corner_2d_pred[0],corner_2d_pred[1],corner_2d_pred[3],corner_2d_pred[2],corner_2d_pred[0],corner_2d_pred[4],corner_2d_pred[6],corner_2d_pred[2]])
+        #demo_image_ = cv2.cvtColor(np.array(demo_image_), cv2.COLOR_RGB2BGR)
+        demo_image_ = np.uint8(demo_image_)
+        try:
+            cv2.polylines(demo_image_, [points1], True, (255, 0, 0), thickness=1)
+            cv2.polylines(demo_image_, [points2], True, (255, 0, 0), thickness=1)            
+        except:
+            print("passsssssssssssssssssssssssssssssssss")
+            pass
+        print("corner_2d_pred",corner_2d_pred)
+        print("pose_pred",pose_pred)
+        ack ={'corner_2d_pred': corner_2d_pred.tolist(), 'pose_pred':pose_pred.tolist()}
+
+        cv2.namedWindow("seg", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+        cv2.resizeWindow("seg", demo_image_.shape[1], demo_image_.shape[0])
+        cv2.imshow("RGB",demo_image_)
+        cv2.waitKey(1)
+        #import time
+        #time.sleep(0.01)
+def run_demo3():
+    from lib.datasets import make_data_loader
+    from lib.visualizers import make_visualizer
+    import tqdm
+    import torch
+    from lib.networks import make_network
+    from lib.utils.net_utils import load_network
+    import glob
+    from PIL import Image
+    import cv2
+
+    torch.manual_seed(0)
+    #meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
+    demo_images = glob.glob(cfg.demo_path + '/*jpg')
+
+    network = make_network(cfg).cuda()
+    load_network(network, cfg.model_dir, epoch=cfg.test.epoch)
+    network.eval()
+
+    visualizer = make_visualizer(cfg)
+
+    mean, std = np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225])
+    for demo_image in demo_images:
+        demo_image = np.array(Image.open(demo_image)).astype(np.float32)
+        demo_image = cv2.resize(demo_image, (640, 480), 
+               interpolation = cv2.INTER_LINEAR)
+        demo_image_ = demo_image.copy()
+        inp = (((demo_image/255.)-mean)/std).transpose(2, 0, 1).astype(np.float32)
+        #print(inp)
+        inp = torch.Tensor(inp[None]).cuda()
+        with torch.no_grad():
+            output = network(inp)
+        print(output)
+        corner_2d_pred,pose_pred =visualize_(output)
+        corner_2d_pred = np.int32(corner_2d_pred)
+        points1 = np.array([corner_2d_pred[5],corner_2d_pred[4],corner_2d_pred[6],corner_2d_pred[7],corner_2d_pred[5],corner_2d_pred[1],corner_2d_pred[3],corner_2d_pred[7]])
+        points2 = np.array([corner_2d_pred[0],corner_2d_pred[1],corner_2d_pred[3],corner_2d_pred[2],corner_2d_pred[0],corner_2d_pred[4],corner_2d_pred[6],corner_2d_pred[2]])
+        demo_image_ = cv2.cvtColor(np.array(demo_image_), cv2.COLOR_RGB2BGR)
+        demo_image_ = np.uint8(demo_image_)
+        try:
+            cv2.polylines(demo_image_, [points1], True, (255, 0, 0), thickness=1)
+            cv2.polylines(demo_image_, [points2], True, (255, 0, 0), thickness=1)            
+        except:
+            print("passsssssssssssssssssssssssssssssssss")
+            pass
+        print("corner_2d_pred",corner_2d_pred)
+        print("pose_pred",pose_pred)
+        ack ={'corner_2d_pred': corner_2d_pred.tolist(), 'pose_pred':pose_pred.tolist()}
+
+        #cv2.namedWindow("seg", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+        #cv2.resizeWindow("seg", demo_image_.shape[1], demo_image_.shape[0])
+        cv2.imshow("RGB",demo_image_)
+        cv2.waitKey(1)
+        #import time
+        #time.sleep(0.01)
+
 if __name__ == '__main__':
     globals()['run_'+args.type]()
 

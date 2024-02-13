@@ -8,3 +8,4 @@ data/custom/*
 /yolov5/runs/
 data/model/
 yolov5/yolov5s.pt
+*.mp4

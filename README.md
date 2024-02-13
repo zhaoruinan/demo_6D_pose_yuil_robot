@@ -88,7 +88,10 @@ ADD metric: 0.3586
 mask ap70: 1.0
 
 ```
+![result](./assets/result_pvnet.png)  
 4. Test trained pvnet model with a video:
 ```
-
+python run.py --type online3 --cfg_file configs/custom.yaml
 ```
+
+![demo](./assets/obj_demo.gif)  
