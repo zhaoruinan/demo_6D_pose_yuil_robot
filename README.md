@@ -95,3 +95,12 @@ python run.py --type online3 --cfg_file configs/custom.yaml
 ```
 
 ![demo](./assets/obj_demo.gif)  
+
+5. Loop cost time 
+![loop](./assets/loop_cost.png)    
+
+6. run after segment with yolov5
+```
+python run.py --type online2 --cfg_file configs/custom.yaml
+```
+![seg](./assets/seg_pvnet.gif)  

@@ -256,9 +256,12 @@ def visualize_ (output):
         #print(kpt_2d)
      #   img_id = int(batch['img_id'][0])
     #    anno = self.coco.loadAnns(self.coco.getAnnIds(imgIds=img_id))[0]
-        K = np.array([[605.28 ,  0. ,325.73],
- [  0. ,603.868 ,236.881],
- [  0.  , 0. ,  1.]])
+        K = np.array([[774.66809765 ,  0. ,313.05165248],
+[  0. ,775.23750177,211.69164865],
+[  0.  , 0. ,  1.]])
+#        K = np.array([[605.28 ,  0. ,325.73],
+# [  0. ,603.868 ,236.881],
+# [  0.  , 0. ,  1.]])
 #        K = np.array([[381.74 ,  0. ,318.055],
 #         [  0. ,381.74 ,235.08],
 #         [  0.  , 0. ,  1.]])
@@ -422,8 +425,8 @@ def run_online2():
     from yolov5.test004 import yolo_processor as yolo 
     import sys
     yolo_worker = yolo()
-    #vid = cv2.VideoCapture(0) 
-    vid = cv2.VideoCapture("001.mp4") 
+    vid = cv2.VideoCapture(4) 
+    #vid = cv2.VideoCapture("001.mp4") 
     vid.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
     vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     vid.set(cv2.CAP_PROP_FPS, 30)
@@ -460,7 +463,7 @@ def run_online2():
             frame = cv2.resize(frame, (640, 480), 
                interpolation = cv2.INTER_LINEAR)
             im_out, json_dumps=yolo_worker.process_yolo('RealSense', frame)
-            cv2.imshow('im_out', im_out) 
+            #cv2.imshow('im_out', im_out) 
       
     # the 'q' button is set as the 
     # quitting button you may use any 
@@ -468,8 +471,8 @@ def run_online2():
             if cv2.waitKey(1) & 0xFF == ord('q'): 
                 break
 
-            demo_image_= frame
-            demo_image = frame.astype(np.float32)
+            demo_image_= im_out
+            demo_image = im_out.astype(np.float32)
             inp = (((demo_image/255.)-mean)/std).transpose(2, 0, 1).astype(np.float32)
             inp = torch.Tensor(inp[None]).cuda()
             with torch.no_grad():
@@ -485,12 +488,13 @@ def run_online2():
                 cv2.polylines(demo_image_, [points2], True, (255, 0, 0), thickness=1)            
             except:
                pass
-            print("corner_2d_pred",corner_2d_pred)
-            print("pose_pred",pose_pred)
+            #print("corner_2d_pred",corner_2d_pred)
+            #print("pose_pred",pose_pred)
             ack ={'corner_2d_pred': corner_2d_pred.tolist(), 'pose_pred':pose_pred.tolist()}
-            #cv2.namedWindow("seg", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-            #cv2.resizeWindow("seg", demo_image_.shape[1], demo_image_.shape[0])
-            cv2.imshow("RGB",demo_image_)
+            cv2.namedWindow("seg", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+            cv2.resizeWindow("seg", demo_image_.shape[1], demo_image_.shape[0])
+            image_show = np.hstack((frame,demo_image_))
+            cv2.imshow("RGB",image_show)
             cv2.waitKey(1)
             import time
             time.sleep(0.01)
@@ -515,12 +519,11 @@ def run_online3():
     import cv2
     import imagezmq
     import json
-    #vid = cv2.VideoCapture(0) 
-    vid = cv2.VideoCapture("004.mp4") 
+    vid = cv2.VideoCapture(4) 
+    #vid = cv2.VideoCapture("001.mp4") 
+    #vid = cv2.VideoCapture("assets/Webcam/006.webm") 
     torch.manual_seed(0)
     print(os.path.join(cfg.demo_path))
-    #meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
-    demo_images = glob.glob(cfg.demo_path + '/*jpg')
     network = make_network(cfg).cuda()
     print(cfg.model_dir)
     print(cfg.test.epoch)
@@ -530,8 +533,9 @@ def run_online3():
     visualizer = make_visualizer(cfg)
 
     mean, std = np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225])
-    
+    import time
     while True:
+        start_time = time.time()
         ret, frame = vid.read() 
         frame = cv2.resize(frame, (640, 480), 
                interpolation = cv2.INTER_LINEAR)
@@ -542,7 +546,7 @@ def run_online3():
         inp = torch.Tensor(inp[None]).cuda()
         with torch.no_grad():
             output = network(inp)
-        print(output)
+        #print(output)
         corner_2d_pred,pose_pred =visualize_(output)
         corner_2d_pred = np.int32(corner_2d_pred)
         points1 = np.array([corner_2d_pred[5],corner_2d_pred[4],corner_2d_pred[6],corner_2d_pred[7],corner_2d_pred[5],corner_2d_pred[1],corner_2d_pred[3],corner_2d_pred[7]])
@@ -555,14 +559,15 @@ def run_online3():
         except:
             print("passsssssssssssssssssssssssssssssssss")
             pass
-        print("corner_2d_pred",corner_2d_pred)
-        print("pose_pred",pose_pred)
+        #print("corner_2d_pred",corner_2d_pred)
+        #print("pose_pred",pose_pred)
         ack ={'corner_2d_pred': corner_2d_pred.tolist(), 'pose_pred':pose_pred.tolist()}
 
         cv2.namedWindow("seg", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
         cv2.resizeWindow("seg", demo_image_.shape[1], demo_image_.shape[0])
         cv2.imshow("RGB",demo_image_)
         cv2.waitKey(1)
+        print("--- %s seconds ---" % (time.time() - start_time))
         #import time
         #time.sleep(0.01)
 def run_demo3():
@@ -577,7 +582,6 @@ def run_demo3():
     import cv2
 
     torch.manual_seed(0)
-    #meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
     demo_images = glob.glob(cfg.demo_path + '/*jpg')
 
     network = make_network(cfg).cuda()
@@ -597,7 +601,7 @@ def run_demo3():
         inp = torch.Tensor(inp[None]).cuda()
         with torch.no_grad():
             output = network(inp)
-        print(output)
+        #print(output)
         corner_2d_pred,pose_pred =visualize_(output)
         corner_2d_pred = np.int32(corner_2d_pred)
         points1 = np.array([corner_2d_pred[5],corner_2d_pred[4],corner_2d_pred[6],corner_2d_pred[7],corner_2d_pred[5],corner_2d_pred[1],corner_2d_pred[3],corner_2d_pred[7]])
@@ -608,7 +612,6 @@ def run_demo3():
             cv2.polylines(demo_image_, [points1], True, (255, 0, 0), thickness=1)
             cv2.polylines(demo_image_, [points2], True, (255, 0, 0), thickness=1)            
         except:
-            print("passsssssssssssssssssssssssssssssssss")
             pass
         print("corner_2d_pred",corner_2d_pred)
         print("pose_pred",pose_pred)
