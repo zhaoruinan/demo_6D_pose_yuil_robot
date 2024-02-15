@@ -128,7 +128,7 @@ class Yuil_robot(object):
         #print("servo_state: ",servo_state)
         try:
             #time.sleep(20)
-            self.nrc_lib.robot_movej(pos,100,0,80,80,self.robot_name)
+            self.nrc_lib.robot_movej(pos,speed,coord,80,80,self.robot_name)
             
             test = self.nrc_lib.set_current_mode(1,self.robot_name)
             run_state = self.nrc_lib.get_robot_running_state(self.robot_name)
@@ -175,7 +175,7 @@ class Yuil_robot(object):
 
     def robot_set_runspeed(self, speed):     # 设置机器人运行模式速度
         try:
-            self.nrc_lib.set_jogging_speed(speed)
+            self.nrc_lib.set_jogging_speed(speed, self.robot_name)
         except Exception as e:
             print(e)
 
@@ -302,7 +302,7 @@ class Yuil_robot(object):
         except Exception as e:
             print(e)
             return
-    def xyz_to_joint_move(self,xyz,abc):
+    def xyz_to_joint_move(self,xyz,abc,speed=80,coord=0):
         #xyz = np.array([[0.801], [-0.123], [0.177]])
         #abc = np.array([-3.14, 0.0, -3.142])
         #xyz = np.array([[0.601], [-0.323], [0.377]])
@@ -315,15 +315,29 @@ class Yuil_robot(object):
         print("state",self.robot_get_state())
         if self.robot_sim.is_reachable_inverse:
             print("inverse is successful: {0}".format(self.robot_sim.is_reachable_inverse))
-            self.robot_movj(self.robot_sim.axis_values)
+            self.robot_movj(self.robot_sim.axis_values,speed,coord)
     def gripper_open(self):
         self.robot_run("UCLAMP") # open gripper
     def gripper_close(self):
         self.robot_run("CLAMP") # close gripper
-    def go_home(self):
+    def go_home(self, speed=200):
         data = c_double*7
         pos = data()
         try:
-            self.nrc_lib.robot_movej(pos,100,0,80,80,self.robot_name)
+            self.nrc_lib.robot_movej(pos,speed,0,50,50,self.robot_name)
         except Exception as e:
             print(e)
+    def xyz_move(self, pose, speed=80):
+        #xyz = np.array([[0.801], [-0.123], [0.177]])
+        #abc = np.array([-3.14, 0.0, -3.142])
+        #xyz = np.array([[0.601], [-0.323], [0.377]])
+        #abc = np.array([-3.14, 0.0, 1.571])
+        data = c_double*7
+        pos = data()
+        pos[0] = pose[0] *1000
+        pos[1] = pose[1] *1000
+        pos[2] = pose[2] *1000
+        pos[3] = pose[3] 
+        pos[4] = pose[4] 
+        pos[5] = pose[5] 
+        self.nrc_lib.robot_movej(pos,speed,1,80,80,self.robot_name)
