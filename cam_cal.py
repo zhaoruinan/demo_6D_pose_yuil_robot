@@ -10,6 +10,26 @@ import matplotlib.pyplot as plt
 import os, shutil
 from scipy.spatial.transform import Rotation
 
+
+class robot_sim(object):
+    def __init__(self):
+        dh_params = np.array([[0.138, 0.,  0.5*pi, 0],
+                              [0., 0.42135, 0., 0.5 * pi],
+                              [0., 0.40315, 0., -0.5 * pi],
+                              [0.123, 0., 0.5 * pi, 0.5 * pi],
+                              [0.098, 0., -0.5 * pi, 0.5 * pi],
+                              [0.082, 0.,  0., 0.5*pi]])
+
+        self.serial = RobotSerial(dh_params)
+    def t_4_4(self,joint):
+        joint = joint * pi/180
+        f = self.serial.forward(joint)
+        print(f.t_3_1.reshape([3,]),f.euler_3)
+        return f.t_4_4
+    def abc_euler(self,joint):        
+        joint = joint * pi/180
+        f = self.serial.forward(joint)
+        return f.t_3_1.reshape([3, ]), f.euler_3
 CHARUCOBOARD_ROWCOUNT = 7
 CHARUCOBOARD_COLCOUNT = 5 
 ARUCO_DICT = aruco.Dictionary_get(aruco.DICT_4X4_50)
@@ -126,7 +146,19 @@ class CameraCalibration:
         self.transform_files = sorted(glob.glob(f'{Transforms_folder}/*.npz'))
         self.images = [cv2.imread(f) for f in self.image_files]
         self.images = [cv2.cvtColor(img, cv2.COLOR_RGB2BGR) for img in self.images]
-        self.All_T_base2EE_list = [np.load(f)['arr_0'] for f in self.transform_files]
+        if True:
+            sim = robot_sim()
+            JointPositions_folder = "cal_data/002/JointPositions"
+            JointPositions_files = sorted(glob.glob(f'{JointPositions_folder}/*.npz'))
+            self.All_T_base2EE_list = []
+            for file in JointPositions_files:
+                print(file)
+                joint = np.load(file)['arr_0']
+                print(joint)
+                self.All_T_base2EE_list.append(sim.t_4_4(joint))
+
+        else:
+            self.All_T_base2EE_list = [np.load(f)['arr_0'] for f in self.transform_files]
 
         #find chessboard corners and index of images with chessboard corners
         self.chessboard_corners, self.IndexWithImg, self.ids_all = self.find_chessboard_corners(self.images, self.pattern_size, ShowCorners=ShowCorners,charuco_use=charuco_use)
@@ -141,10 +173,12 @@ class CameraCalibration:
         print("intrinsic_matrix",self.intrinsic_matrix)
 
         #Remove transforms were corners weren't detected
-        #print(self.All_T_base2EE_list)
+        joint_1 = np.load("cal_data/003/JointPositions/JointPositions050.npz")['arr_0']
+        print("joint",joint_1)
+        print(self.All_T_base2EE_list[2])
         #print(self.IndexWithImg)
         self.T_base2EE_list = [self.All_T_base2EE_list[i] for i in self.IndexWithImg]
-        print("T_base2EE",self.T_base2EE_list[0])
+        print("T_base2EE",self.T_base2EE_list[1])
 
         #save intrinsic matrix
         np.savez("IntrinsicMatrix.npz", self.intrinsic_matrix)
@@ -192,7 +226,7 @@ class CameraCalibration:
             self.T_cam2gripper = np.concatenate((self.R_cam2gripper, self.t_cam2gripper), axis=1)
             self.T_cam2gripper = np.concatenate((self.T_cam2gripper, np.array([[0, 0, 0, 1]])), axis=0)
             #Save results in folder FinalTransforms
-            np.savez(f"FinalTransforms/T_cam2gripper_Method_{i}.npz", self.T_cam2gripper)
+            np.savez(f"cal_data/002/FinalTransforms/T_cam2gripper_Method_{i}.npz", self.T_cam2gripper)
             #Save the inverse transfrom too
             self.T_gripper2cam = np.linalg.inv(self.T_cam2gripper)
             np.savez(f"cal_data/002/FinalTransforms/T_gripper2cam_Method_{i}.npz", self.T_gripper2cam)
@@ -208,7 +242,7 @@ class CameraCalibration:
             self.T_gripper2cam = np.concatenate((self.R_gripper2cam, self.t_gripper2cam), axis=1)
             self.T_gripper2cam = np.concatenate((self.T_gripper2cam, np.array([[0, 0, 0, 1]])), axis=0)
             #Save results in folder FinalTransforms
-            np.savez(f"FinalTransforms/T_gripper2cam_Method_{i+4}.npz", self.T_gripper2cam)
+            np.savez(f"cal_data/002/FinalTransforms/T_gripper2cam_Method_{i+4}.npz", self.T_gripper2cam)
             #save inverse tooVecTose3
             self.T_cam2gripper = np.linalg.inv(self.T_gripper2cam)
             np.savez(f"cal_data/002/FinalTransforms/T_cam2gripper_Method_{i+4}.npz", self.T_cam2gripper)
@@ -221,6 +255,7 @@ class CameraCalibration:
         print("Finding corners...")
         if(charuco_use == False):
             for image in images:
+                #print(pattern_size)
                 gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
                 ret, corners = cv2.findChessboardCorners(gray, pattern_size)
                 if ret:
@@ -236,7 +271,7 @@ class CameraCalibration:
                     if not os.path.exists("DetectedCorners"):
                         os.makedirs("DetectedCorners")
 
-                    cv2.imwrite("cal_data/001/DetectedCorners/DetectedCorners" + str(i) + ".png", image)
+                    cv2.imwrite("cal_data/002/DetectedCorners/DetectedCorners" + str(i) + ".png", image)
 
                     IndexWithImg.append(i)
                     i = i + 1
@@ -381,54 +416,107 @@ class CameraCalibration:
 
 
 def take_pho():
+    path_list = ["cal_data/002/", "cal_data/002/RGBImgs/", "cal_data/002/T_base2ee/", "cal_data/002/DetectedCorners/", "cal_data/002/JointPositions/", "cal_data/002/XYZPositions"]
+    for path in path_list:
+        if not os.path.exists(path):
+            os.mkdir(path)
 
     clear_folder("cal_data/002/RGBImgs/")
     clear_folder("cal_data/002/T_base2ee/")
 
     real_robot = Yuil_robot()
-    #real_robot.go_home(80)
+    sim = robot_sim()
+    real_robot.go_home(80)
     vid = cv2.VideoCapture(0) 
     start_time = time.time()
     run_num = 0.0
+    sim = robot_sim()
     #pos = [0.651, -0.123, 0.277,-3.14, 0.0, 1.56]
     pos = [0.601, -0.173, 0.277,-3.14, 0.0, 1.56]
+    pos_set = np.array(pos)
     real_robot.xyz_move(pos,100)
-    while(run_num < 50): 
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(('localhost', 8089))
+    s.listen(1)
+    while(run_num < 120): 
         ret, frame = vid.read() 
-        if (time.time() - start_time)%5 < 0.05 and run_num < (time.time() - start_time)/5:
+        if (time.time() - start_time)%10 < 0.05 and run_num < (time.time() - start_time)/5:
             print((time.time() - start_time))
-            pos_n = real_robot.robot_get_current_xyz_position()
+            #pos_n = real_robot.robot_get_current_xyz_position()
             #print(pos_n[0],pos_n[1],pos_n[2],pos_n[3],pos_n[4],pos_n[5])
-            pos_v = np.array([pos_n[0],pos_n[1],pos_n[2],pos_n[3],pos_n[4],pos_n[5]])
-            pos_j = real_robot.robot_get_current_position()
-            pos_j = np.array([pos_j[0],pos_j[1],pos_j[2],pos_j[3],pos_j[4],pos_j[5]])
-            print(pos_j[0],pos_j[1],pos_j[2],pos_j[3],pos_j[4],pos_j[5])
+            #pos_v = np.array([pos_n[0],pos_n[1],pos_n[2],pos_n[3],pos_n[4],pos_n[5]])
+            #pos_j = real_robot.robot_get_current_position()
+            #pos_j = np.array([pos_j[0],pos_j[1],pos_j[2],pos_j[3],pos_j[4],pos_j[5]])
+            #print(pos_j[0],pos_j[1],pos_j[2],pos_j[3],pos_j[4],pos_j[5])
             run_num = run_num +1
             if ret == True:
-                cv2.imwrite("cal_data/002/RGBimgs/color_image" + str(int(run_num)).zfill(3) + ".png", frame)
-                t2b_R,t2b_T = gripper2base(pos_v[3],pos_v[4],pos_v[5],pos_v[0]/1000,pos_v[1]/1000,pos_v[2]/1000)
-                t2b_R = euler2rotm(np.array([pos_v[3],pos_v[4],pos_v[5]]))
-                t2b_TR = RpToTrans(t2b_R,t2b_T)
-                print(t2b_TR)
-                np.savez_compressed("cal_data/002/T_base2ee/TBase2EE_" + str(int(run_num)).zfill(3) , t2b_TR)
-                np.savez_compressed("cal_data/002/JointPositions/JointPositions" + str(int(run_num)).zfill(3) , pos_j)
-                np.savez_compressed("cal_data/002/XYZPositions/XYZPositions" + str(int(run_num)).zfill(3) , pos_v)
+                #conn, addr = s.accept()
+                #cmnd = conn.recv(4)
+                cv2.imwrite("cal_data/002/RGBImgs/color_image" + str(int(run_num)).zfill(3) + ".png", frame)
+                pos_j = real_robot.robot_get_current_position()
+                #time.sleep(0.1)
+                pos_j = real_robot.robot_get_current_xyz_position()
+                pos_v = np.array([pos_j[0],pos_j[1],pos_j[2],pos_j[3],pos_j[4],pos_j[5]])
+                #conn.sendall(pos_v)
+                print(pos_v)
 
-            if int(run_num)%10 != 0:
+                t2b_R,t2b_T = gripper2base(pos_v[3],pos_v[4],pos_v[5],pos_v[0]/1000,pos_v[1]/1000,pos_v[2]/1000)
+                #t2b_R,t2b_T = gripper2base(pos_set[3],pos_set[4],pos_set[5],pos_set[0],pos_set[1],pos_set[2])
+                #t2b_R = euler2rotm(np.array([pos_set[3],pos_set[4],pos_set[5]]))
+                t2b_TR = RpToTrans(t2b_R,t2b_T)
+
+                print("t2b_TR",t2b_TR)
+                #print("sim.t_4_4",sim.t_4_4(pos_j))
+                np.savez_compressed("cal_data/002/T_base2ee/TBase2EE_" + str(int(run_num)).zfill(3) , t2b_TR)
+                pos_j = real_robot.robot_get_current_position()
+                pos_j = np.array([pos_j[0],pos_j[1],pos_j[2],pos_j[3],pos_j[4],pos_j[5]])
+                np.savez_compressed("cal_data/002/JointPositions/JointPositions" + str(int(run_num)).zfill(3) , pos_j)
+                np.savez_compressed("cal_data/002/XYZPositions/XYZPositions" + str(int(run_num)).zfill(3) , pos_set)
+                print("pos_set",pos_set)
+                print("pos_j",pos_j)
+                abc,euler = sim.abc_euler(pos_j)
+                print("abc_euler",abc,euler)
+
+            if int(run_num)%20 != 0 and int(run_num)%10 < 5 :
                 pos[0] = pos[0] + 0.01
                 pos[1] = pos[1] + 0.01
                 pos[3] = pos[3] + 0.01
                 pos[4] = pos[4] + 0.01
                 pos[5] = pos[5] + 0.01
+            elif int(run_num)%10 != 0 and int(run_num)%10 < 5 :
+                pos[0] = pos[0] + 0.01
+                pos[1] = pos[1] - 0.01
+                pos[3] = pos[3] + 0.01
+                pos[4] = pos[4] - 0.01
+                pos[5] = pos[5] + 0.01
+            elif int(run_num)%10 != 0 and int(run_num)%10 < 15 :
+                pos[0] = pos[0] - 0.01
+                pos[1] = pos[1] - 0.01
+                pos[3] = pos[3] + 0.01
+                pos[4] = pos[4] - 0.01
+                pos[5] = pos[5] - 0.01
+            elif int(run_num)%10 != 0 and int(run_num)%10 < 20 :
+                pos[0] = pos[0] - 0.01
+                pos[1] = pos[1] - 0.01
+                pos[3] = pos[3] - 0.01
+                pos[4] = pos[4] - 0.01
+                pos[5] = pos[5] - 0.01
             else:
                 pos[0] = 0.601
                 pos[1] = -0.173
-                pos[2] = pos[2] + 0.05
+                pos[2] = pos[2] + 0.03
                 pos[3] = -3.14
                 pos[4] = 0.0
                 pos[5] = 1.56
-                
-            real_robot.xyz_move(pos,80)
+            pos_set = np.array(pos)
+            
+            pos_j = real_robot.robot_get_current_xyz_position()
+            pos_v = np.array([pos_j[0],pos_j[1],pos_j[2],pos_j[3],pos_j[4],pos_j[5]])
+            #conn.sendall(pos_v)
+            print("111111111111",pos_v)
+            real_robot.xyz_move(pos,99)
+
 
         if ret==True:
             cv2.imshow('RGB', frame) 
@@ -437,15 +525,27 @@ def take_pho():
         else:
             break
     pos = [0.601, -0.173, 0.277,-3.14, 0.0, 1.56]
+    time.sleep(5)
     real_robot.xyz_move(pos,80)
 
-    vid.release() 
+    
     cv2.destroyAllWindows() 
+    vid.release() 
 
 def cal():
-    image_folder = "cal_data/002/RGBimgs/"
+    image_folder = "cal_data/001/RGBImgs/"
+    PoseFolder = "cal_data/001/T_base2ee/"
+    #calib = CameraCalibration(image_folder, PoseFolder,ShowProjectError=True,charuco_use=True)
+    calib = CameraCalibration(image_folder, PoseFolder,ShowProjectError=True)
+def cal2():
+    image_folder = "cal_data/002/RGBImgs/"
     PoseFolder = "cal_data/002/T_base2ee/"
     calib = CameraCalibration(image_folder, PoseFolder,ShowProjectError=True,charuco_use=True)
+
+def cal3():
+    image_folder = "cal_data/002/RGBImgs/"
+    PoseFolder = "cal_data/002/T_base2ee/"
+    calib = CameraCalibration(image_folder, PoseFolder,pattern_size=(4, 6),square_size=0.04, ShowProjectError=True, charuco_use=True)
 def clear_folder(folder):
     files = glob.glob(folder+"*")
     print(files)
@@ -453,7 +553,7 @@ def clear_folder(folder):
         os.remove(f)
 def main():
     #take_pho()
-    cal()
+    cal3()
 
 if __name__ == "__main__":
     main()

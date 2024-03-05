@@ -104,3 +104,9 @@ python run.py --type online3 --cfg_file configs/custom.yaml
 python run.py --type online2 --cfg_file configs/custom.yaml
 ```
 ![seg](./assets/seg_pvnet.gif)  
+v4l2-ctl --device=0 --list-ctrls
+sudo v4l2-ctl --device=0 --set-ctrl=focus_automatic_continuous=0
+sudo v4l2-ctl --device=0 --set-ctrl=focus_absolute=10
+sudo v4l2-ctl --device=0 --set-ctrl=brightness=-50
+sudo v4l2-ctl --device=0 --set-ctrl=white_balance_automatic=0
+sudo v4l2-ctl --device=0 --set-ctrl=white_balance_temperature=6000

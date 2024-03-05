@@ -1,8 +1,9 @@
 from lib.config import cfg, args
 import numpy as np
 import os
-
-
+import math
+pi = math.pi
+from math import cos,sin
 def run_rgb():
     import glob
     from scipy.misc import imread
@@ -256,11 +257,20 @@ def visualize_ (output):
         #print(kpt_2d)
      #   img_id = int(batch['img_id'][0])
     #    anno = self.coco.loadAnns(self.coco.getAnnIds(imgIds=img_id))[0]
-        K = np.array([[774.66809765 ,  0. ,313.05165248],
-[  0. ,775.23750177,211.69164865],
+        #K = np.array([[774.66809765 ,  0. ,313.05165248],
+#[  0. ,775.23750177,211.69164865],
+#[  0.  , 0. ,  1.]])
+        K = np.array([[800.9824513   ,  0. ,321.68465049],
+[  0. ,800.20088847,230.59126429],
 [  0.  , 0. ,  1.]])
+#        K = np.array([[735.320751   ,  0. ,230.59126429],
+#[  0. ,732.90725684,272.73279961],
+#[  0.  , 0. ,  1.]])
 #        K = np.array([[605.28 ,  0. ,325.73],
 # [  0. ,603.868 ,236.881],
+# [  0.  , 0. ,  1.]])
+#        K = np.array([[758.377 ,  0. ,319.42],
+# [  0. ,758.59 ,226.155],
 # [  0.  , 0. ,  1.]])
 #        K = np.array([[381.74 ,  0. ,318.055],
 #         [  0. ,381.74 ,235.08],
@@ -425,7 +435,7 @@ def run_online2():
     from yolov5.test004 import yolo_processor as yolo 
     import sys
     yolo_worker = yolo()
-    vid = cv2.VideoCapture(4) 
+    vid = cv2.VideoCapture(0) 
     #vid = cv2.VideoCapture("001.mp4") 
     vid.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
     vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
@@ -519,7 +529,7 @@ def run_online3():
     import cv2
     import imagezmq
     import json
-    vid = cv2.VideoCapture(4) 
+    vid = cv2.VideoCapture(2) 
     #vid = cv2.VideoCapture("001.mp4") 
     #vid = cv2.VideoCapture("assets/Webcam/006.webm") 
     torch.manual_seed(0)
@@ -623,6 +633,284 @@ def run_demo3():
         cv2.waitKey(1)
         #import time
         #time.sleep(0.01)
+
+import socket
+HOST = "127.0.0.1"  # The server's hostname or IP address
+PORT = 8089  # The port used by the server
+class real_robot(object):
+    def __init__(self):
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    def robot_read_pos(self):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((HOST, PORT))
+            s.sendall(b"READ")
+            data = s.recv(1024)
+            pose_t = np.frombuffer(data, dtype=np.float64)
+        return pose_t
+        #print(f"Received {data!r}")
+    def robot_set_pos(self,pose = None,home = False,stop = False,axis = 1,read = False):
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.connect((HOST, PORT))
+            if read:
+                s.sendall(b"READ")
+                data = s.recv(1024)
+                pose_t = np.frombuffer(data, dtype=np.float64)
+                return pose_t
+            elif home:
+                s.sendall(b"HOME")
+            elif stop:
+                s.sendall(b"STOP")
+            else:
+                pose_b = pose.tobytes()
+            if axis ==1:
+                s.sendall(b"PS_T"+pose_b)
+            else:
+                s.sendall(b"PS_J"+pose_b)
+            data = s.recv(1024)
+            pose_j = np.frombuffer(data, dtype=np.float64)
+            return pose_j
+        #print(f"Received {data!r}")
+        #print(pose_j)
+def TransToRp(T):
+    """Converts a homogeneous transformation matrix into a rotation matrix
+    and position vector
+    :param T: A homogeneous transformation matrix
+    :return R: The corresponding rotation matrix,
+    :return p: The corresponding position vector.
+    Example Input:
+        T = np.array([[1, 0,  0, 0],
+                      [0, 0, -1, 0],
+                      [0, 1,  0, 3],
+                      [0, 0,  0, 1]])
+    Output:
+        (np.array([[1, 0,  0],
+                   [0, 0, -1],
+                   [0, 1,  0]]),
+         np.array([0, 0, 3]))
+    """
+    T = np.array(T)
+    return T[0: 3, 0: 3], T[0: 3, 3]
+def RpToTrans(R, p):
+    """Converts a rotation matrix and a position vector into homogeneous
+    transformation matrix
+    :param R: A 3x3 rotation matrix
+    :param p: A 3-vector
+    :return: A homogeneous transformation matrix corresponding to the inputs
+    Example Input:
+        R = np.array([[1, 0,  0],
+                      [0, 0, -1],
+                      [0, 1,  0]])
+        p = np.array([1, 2, 5])
+    Output:
+        np.array([[1, 0,  0, 1],
+                  [0, 0, -1, 2],
+                  [0, 1,  0, 5],
+                  [0, 0,  0, 1]])
+    """
+    return np.r_[np.c_[R, p], [[0, 0, 0, 1]]]
+
+def angle2rotation(x, y, z):
+    Rx = np.array([[1, 0, 0], [0, cos(x), -sin(x)], [0, sin(x), cos(x)]])
+    Ry = np.array([[cos(y), 0, sin(y)], [0, 1, 0], [-sin(y), 0, cos(y)]])
+    Rz = np.array([[cos(z), -sin(z), 0], [sin(z), cos(z), 0], [0, 0, 1]])
+    R = Rz @ Ry @ Rx
+    return R
+def gripper2base(x, y, z, tx, ty, tz):
+    thetaX = x #/ 180 * pi
+    thetaY = y #/ 180 * pi
+    thetaZ = z #/ 180 * pi
+    R_gripper2base = angle2rotation(thetaX, thetaY, thetaZ)
+    T_gripper2base = np.array([[tx], [ty], [tz]])
+    Matrix_gripper2base = np.column_stack([R_gripper2base, T_gripper2base])
+    Matrix_gripper2base = np.row_stack((Matrix_gripper2base, np.array([0, 0, 0, 1])))
+    R_gripper2base = Matrix_gripper2base[:3, :3]
+    T_gripper2base = Matrix_gripper2base[:3, 3].reshape((3, 1))
+    return R_gripper2base, T_gripper2base
+def rotm2euler(R) :
+ 
+    assert(isRotm(R))
+
+    sy = math.sqrt(R[0,0] * R[0,0] +  R[1,0] * R[1,0])
+    singular = sy < 1e-6
+
+    if  not singular :
+        x = math.atan2(R[2,1] , R[2,2])
+        y = math.atan2(-R[2,0], sy)
+        z = math.atan2(R[1,0], R[0,0])
+    else :
+        x = math.atan2(-R[1,2], R[1,1])
+        y = math.atan2(-R[2,0], sy)
+        z = 0
+ 
+    return np.array([x, y, z])
+def isRotm(R) :
+    Rt = np.transpose(R)
+    shouldBeIdentity = np.dot(Rt, R)
+    I = np.identity(3, dtype = R.dtype)
+    n = np.linalg.norm(I - shouldBeIdentity)
+    return n < 1e-6
+def run_online4():
+    test_time = "002"
+    path_list = ["pose_data/RGB/", "pose_data/seg/", "pose_data/pose_pred/","pose_data/time/"]
+    for path in path_list:
+        if not os.path.exists(path):
+            os.mkdir(path)
+    for path in path_list:
+        if not os.path.exists(path+test_time+'/'):
+            os.mkdir(path+test_time+'/')
+    import threading
+    #from menu import menu
+    #t_menu = threading.Thread(target=menu)
+    #t_menu.start()
+    pose_set = np.array([0.489, 0.0981, 0.413, 2.589, 0.245, 1.919])
+    #robot_set_pos(home = True)
+    robot1 = real_robot()
+    robot1.robot_set_pos(pose = pose_set)
+
+    from lib.datasets import make_data_loader
+    from lib.visualizers import make_visualizer
+    import tqdm
+    import torch
+    from lib.networks import make_network
+    from lib.utils.net_utils import load_network
+    import glob
+    from PIL import Image
+    import matplotlib.pyplot as plt
+    import matplotlib.patches as patches
+    import cv2
+    from yolov5.test004 import yolo_processor as yolo 
+    import sys
+    yolo_worker = yolo()
+    vid = cv2.VideoCapture("test003.webm") 
+    #vid = cv2.VideoCapture(0) 
+    vid.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
+    vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+    vid.set(cv2.CAP_PROP_FPS, 30)
+    #width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH) + 0.5)
+    #height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT) + 0.5)
+    width,height = 720,480
+    size = (width, height)
+    fourcc = cv2.VideoWriter_fourcc(*'XVID')
+
+    torch.manual_seed(0)
+    print(os.path.join(cfg.demo_path))
+    #meta = np.load(os.path.join(cfg.demo_path, 'meta.npy'), allow_pickle=True).item()
+    #demo_images = glob.glob(cfg.demo_path + '/*jpg')
+    network = make_network(cfg).cuda()
+    print(cfg.model_dir)
+    print(cfg.test.epoch)
+    load_network(network, cfg.model_dir, epoch=cfg.test.epoch)
+    network.eval()
+
+    visualizer = make_visualizer(cfg)
+    run_num = 1
+    import time
+    start_time = time.time()
+
+    mean, std = np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225])
+#out = cv2.VideoWriter('your_video.avi', fourcc, 20.0, size)
+
+
+
+    while(True): 
+      
+    # Capture the video frame 
+    # by frame 
+        ret, frame = vid.read() 
+        if ret==True:
+
+            #print(frame.shape)
+            frame = cv2.resize(frame, (640, 480), 
+               interpolation = cv2.INTER_LINEAR)
+            im_out, json_dumps=yolo_worker.process_yolo('RealSense', frame)
+            #cv2.imshow('im_out', im_out) 
+      
+    # the 'q' button is set as the 
+    # quitting button you may use any 
+    # desired button of your choice 
+            if cv2.waitKey(1) & 0xFF == ord('q'): 
+                break
+
+            demo_image_= im_out
+            demo_image = im_out.astype(np.float32)
+            inp = (((demo_image/255.)-mean)/std).transpose(2, 0, 1).astype(np.float32)
+            inp = torch.Tensor(inp[None]).cuda()
+            with torch.no_grad():
+                output = network(inp)
+            corner_2d_pred,pose_pred =visualize_(output)
+            corner_2d_pred = np.int32(corner_2d_pred)
+
+            points1 = np.array([corner_2d_pred[5],corner_2d_pred[4],corner_2d_pred[6],corner_2d_pred[7],corner_2d_pred[5],corner_2d_pred[1],corner_2d_pred[3],corner_2d_pred[7]])
+            points2 = np.array([corner_2d_pred[0],corner_2d_pred[1],corner_2d_pred[3],corner_2d_pred[2],corner_2d_pred[0],corner_2d_pred[4],corner_2d_pred[6],corner_2d_pred[2]])
+            #demo_image_ = cv2.cvtColor(np.array(demo_image_), cv2.COLOR_RGB2BGR)
+            demo_image_ = np.uint8(demo_image_)
+            try:
+                cv2.polylines(demo_image_, [points1], True, (255, 0, 0), thickness=1)
+                cv2.polylines(demo_image_, [points2], True, (255, 0, 0), thickness=1)            
+            except:
+               pass
+            #print("corner_2d_pred",corner_2d_pred)
+            print("pose_pred",pose_pred)
+
+            #xyz1 [     489.01      98.097      412.99       2.589     0.24498       1.919]
+
+
+            xyz1 = robot1.robot_set_pos(read = True)
+            if xyz1 == []:
+                continue
+            print("xyz1",xyz1)
+            t2b_R,t2b_T = gripper2base(xyz1[3],xyz1[4],xyz1[5],xyz1[0]/1000,xyz1[1]/1000,xyz1[2]/1000)
+            #print(t2b_R,t2b_T)
+            t2b_TR = RpToTrans(t2b_R,t2b_T)
+            #print(t2b_TR)
+
+            c2t_TR = np.matrix([[ -0.28172572, -0.95847456,  0.04423947, 0.00244391],
+                       [ 0.94093182, -0.28500701 , -0.18280675,  0.09010415 ],
+                       [ 0.18782418,  -0.00987504,  0.98215302, 0.0771455],
+                       [ 0.,          0.,          0.,          1.        ]])
+
+            #c2b = t2b_TR
+            c2b = np.dot(t2b_TR, c2t_TR)
+            print("c2b",c2b)
+
+            o2c_TR = RpToTrans(pose_pred[:, :3].T,pose_pred[:, 3:].T[0])
+            o2b_TR = np.dot(t2b_TR,o2c_TR)
+            #print()
+            o2b_R,o2b_T = TransToRp(o2b_TR) 
+            move_goal_R = rotm2euler(o2b_R)
+            print("o2b_TR:",o2b_TR)
+            if (o2b_T[2]<0.2 and  o2b_T[0] > 0.4 and o2b_T[1] < 0.5  ):
+                
+                pose_set[0] = o2b_T[0]
+                pose_set[1] = o2b_T[1]
+                pose_set[3] = 3.14
+                pose_set[4] = 0
+                pose_set[5] = 1.57
+                #robot1.robot_set_pos(pose = pose_set)
+
+            print("--- %s seconds ---" % (time.time() - start_time))
+            t_pose = time.time() - start_time
+            np.savez_compressed("pose_data/time/"+test_time+"/" + str(run_num).zfill(3) , t_pose)
+            np.savez_compressed("pose_data/pose_pred/"+test_time+"/" + str(run_num).zfill(3) , pose_pred)
+            cv2.imwrite("pose_data/RGB/"+test_time+"/" + str(int(run_num)).zfill(3) + ".png", frame)
+            cv2.imwrite("pose_data/seg/"+test_time+"/" + str(int(run_num)).zfill(3) + ".png", frame)
+            run_num = run_num +1
+
+            ack ={'corner_2d_pred': corner_2d_pred.tolist(), 'pose_pred':pose_pred.tolist()}
+            #cv2.namedWindow("seg", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+            #cv2.resizeWindow("seg", demo_image_.shape[1], demo_image_.shape[0])
+            image_show = np.hstack((frame,demo_image_))
+            cv2.imshow("RGB",image_show)
+            cv2.waitKey(1)
+            import time
+            time.sleep(0.01)
+
+# After the loop release the cap object 
+    vid.release() 
+#out.release()
+# Destroy all the windows 
+    cv2.destroyAllWindows() 
+
 
 if __name__ == '__main__':
     globals()['run_'+args.type]()
