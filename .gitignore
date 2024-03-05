@@ -10,3 +10,4 @@ data/model/
 yolov5/yolov5s.pt
 *.mp4
 *.webm
+*.npz

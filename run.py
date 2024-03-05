@@ -1,5 +1,6 @@
 from lib.config import cfg, args
 import numpy as np
+from numpy import polyfit,poly1d
 import os
 import math
 pi = math.pi
@@ -762,10 +763,11 @@ def run_online4():
     #from menu import menu
     #t_menu = threading.Thread(target=menu)
     #t_menu.start()
-    pose_set = np.array([0.489, 0.0981, 0.413, 2.589, 0.245, 1.919])
+    pose_obs = np.array([0.489, 0.0981, 0.413, 2.589, 0.245, 1.919])
     #robot_set_pos(home = True)
+    pose_move = pose_obs
     robot1 = real_robot()
-    robot1.robot_set_pos(pose = pose_set)
+    robot1.robot_set_pos(pose = pose_move)
 
     from lib.datasets import make_data_loader
     from lib.visualizers import make_visualizer
@@ -781,8 +783,8 @@ def run_online4():
     from yolov5.test004 import yolo_processor as yolo 
     import sys
     yolo_worker = yolo()
-    vid = cv2.VideoCapture("test003.webm") 
-    #vid = cv2.VideoCapture(0) 
+    #vid = cv2.VideoCapture("test003.webm") 
+    vid = cv2.VideoCapture(0) 
     vid.set(cv2.CAP_PROP_FRAME_WIDTH, 720)
     vid.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
     vid.set(cv2.CAP_PROP_FPS, 30)
@@ -808,6 +810,10 @@ def run_online4():
     start_time = time.time()
 
     mean, std = np.array([0.485, 0.456, 0.406]), np.array([0.229, 0.224, 0.225])
+
+    pose_path = []
+    pose_path_t = []
+    move_flag = False
 #out = cv2.VideoWriter('your_video.avi', fourcc, 20.0, size)
 
 
@@ -822,6 +828,7 @@ def run_online4():
             #print(frame.shape)
             frame = cv2.resize(frame, (640, 480), 
                interpolation = cv2.INTER_LINEAR)
+            frame_r = frame.copy()
             im_out, json_dumps=yolo_worker.process_yolo('RealSense', frame)
             #cv2.imshow('im_out', im_out) 
       
@@ -850,19 +857,25 @@ def run_online4():
             except:
                pass
             #print("corner_2d_pred",corner_2d_pred)
-            print("pose_pred",pose_pred)
+            #print("pose_pred",pose_pred)
 
             #xyz1 [     489.01      98.097      412.99       2.589     0.24498       1.919]
 
 
             xyz1 = robot1.robot_set_pos(read = True)
-            if xyz1 == []:
+            #print(xyz1.size)
+            if xyz1.size != 6:
                 continue
-            print("xyz1",xyz1)
-            t2b_R,t2b_T = gripper2base(xyz1[3],xyz1[4],xyz1[5],xyz1[0]/1000,xyz1[1]/1000,xyz1[2]/1000)
+            #print("xyz1",xyz1)
+            t2b_R,t2b_T = gripper2base(xyz1[3],xyz1[4],xyz1[5]-pi/2,xyz1[0]/1000,xyz1[1]/1000,xyz1[2]/1000)
             #print(t2b_R,t2b_T)
             t2b_TR = RpToTrans(t2b_R,t2b_T)
             #print(t2b_TR)
+
+            #c2t_TR = np.matrix([[ 0.27906511, -0.95956969,  0.03672428, 0.12282908],
+            #           [ -0.94423484, -0.26724354,  0.19235762,  -0.09753307],
+            #           [ -0.17476622, -0.08835665, -0.98063748, 0.04831654],
+            #           [ 0.,          0.,          0.,          1.        ]])
 
             c2t_TR = np.matrix([[ -0.28172572, -0.95847456,  0.04423947, 0.00244391],
                        [ 0.94093182, -0.28500701 , -0.18280675,  0.09010415 ],
@@ -871,25 +884,94 @@ def run_online4():
 
             #c2b = t2b_TR
             c2b = np.dot(t2b_TR, c2t_TR)
-            print("c2b",c2b)
+            #print("c2b",c2b)
 
-            o2c_TR = RpToTrans(pose_pred[:, :3].T,pose_pred[:, 3:].T[0])
+            o2c_euler = rotm2euler(pose_pred[:, :3].T)
+            o2c_euler = o2c_euler
+            o2c_euler[0] = pi/2 - o2c_euler[0] 
+
+            o2c_T = pose_pred[:, 3:].T[0]
+            temp = o2c_T[0]
+            o2c_T[0] = -o2c_T[1]
+            o2c_T[1] = temp
+            o2c_R = angle2rotation(o2c_euler[0],o2c_euler[1],o2c_euler[2])
+
+            
+            o2c_TR = RpToTrans(o2c_R,o2c_T)
             o2b_TR = np.dot(t2b_TR,o2c_TR)
             #print()
             o2b_R,o2b_T = TransToRp(o2b_TR) 
             move_goal_R = rotm2euler(o2b_R)
-            print("o2b_TR:",o2b_TR)
-            if (o2b_T[2]<0.2 and  o2b_T[0] > 0.4 and o2b_T[1] < 0.5  ):
-                
-                pose_set[0] = o2b_T[0]
-                pose_set[1] = o2b_T[1]
-                pose_set[3] = 3.14
-                pose_set[4] = 0
-                pose_set[5] = 1.57
-                #robot1.robot_set_pos(pose = pose_set)
-
-            print("--- %s seconds ---" % (time.time() - start_time))
+            #print("o2b_TR:",o2b_TR)
+            
             t_pose = time.time() - start_time
+            pose_set = pose_obs.copy()
+            pose_set[0] = o2b_T[0]
+            pose_set[1] = o2b_T[1]
+            pose_set[2] = 0.1
+            pose_set[3] = 3.14
+            pose_set[4] = 0
+            pose_set[5] = 1.57
+            #print("pose_path and time",pose_path,pose_path_t)
+            xyz_obs = np.array([     489.01,   98.097,      412.99,       2.589,     0.24498,       1.919])
+            if np.linalg.norm((xyz1 - xyz_obs))<30:
+                obs_flag = True
+            else:
+                obs_flag = False
+
+            #print("obs_flag",obs_flag)
+            if move_flag:
+                #print("moving ...")
+                xyz_m = np.array([xyz1[0]/1000,xyz1[1]/1000,xyz1[2]/1000])
+                #print(pose_move[:3])
+                distance = np.linalg.norm((xyz_m - pose_move[:3]))
+                #print(distance)
+                if distance <0.01:
+                    
+                    print("reach and go back")
+                    move_flag = False
+                    print("moved in --- %s seconds ---" % (time.time() - move_start))
+                    time.sleep(5)
+                    pose_move = pose_obs.copy()
+                    print("pose_move",pose_move)
+                    robot1.robot_set_pos(pose = pose_move)
+                    move_start = time.time()
+
+
+
+            robot_set_pos_np= np.array(pose_path)
+            if robot_set_pos_np.size>119 and move_flag == False:
+                print("--- %s seconds ---" % (time.time() - start_time))
+                #print("pose_path and time",pose_path,pose_path_t)
+                pose_path_t_np= np.array(pose_path_t)
+                pose_path = []
+                pose_path_t = []
+                
+                
+                xy_fit = xy_line_fit(robot_set_pos_np,pose_path_t_np,27)
+                print("xy_fit",xy_fit)
+                #if xy_fit[0]>0.8 or xy_fit[1]>0.8 or xy_fit[0]<0.2 or xy_fit[1]<-0.8:
+                #    time.sleep(3)
+                #else:
+                #pose_move =  np.mean(robot_set_pos_np,axis=0).copy()
+                #print(pose_move)
+                if move_flag ==False:
+                    np.savez_compressed("pose_path" + str(int(t_pose)).zfill(5) , robot_set_pos_np)
+                    
+                    np.savez_compressed("pose_path_t" + str(int(t_pose)).zfill(5) , pose_path_t_np)
+                
+                    
+                    pose_move =  np.mean(robot_set_pos_np,axis=0).copy()
+                    #pose_move[0] = xy_fit[0]
+                    pose_move[1] = pose_move[1]+0.18
+                    robot1.robot_set_pos(pose = pose_move)
+                    move_start = time.time()
+                    move_flag = True
+            elif (o2b_T[2]<0.2 and  o2b_T[0] > 0.4 and o2b_T[1] > -0.75 and o2b_T[0] < 0.75  ) and obs_flag and move_flag == False:
+                pose_path.append(pose_set)
+                pose_path_t.append(t_pose)
+
+            
             np.savez_compressed("pose_data/time/"+test_time+"/" + str(run_num).zfill(3) , t_pose)
             np.savez_compressed("pose_data/pose_pred/"+test_time+"/" + str(run_num).zfill(3) , pose_pred)
             cv2.imwrite("pose_data/RGB/"+test_time+"/" + str(int(run_num)).zfill(3) + ".png", frame)
@@ -897,10 +979,11 @@ def run_online4():
             run_num = run_num +1
 
             ack ={'corner_2d_pred': corner_2d_pred.tolist(), 'pose_pred':pose_pred.tolist()}
-            #cv2.namedWindow("seg", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
-            #cv2.resizeWindow("seg", demo_image_.shape[1], demo_image_.shape[0])
-            image_show = np.hstack((frame,demo_image_))
+            cv2.namedWindow("RGB", cv2.WINDOW_NORMAL | cv2.WINDOW_KEEPRATIO)
+            
+            image_show = np.hstack((frame_r,demo_image_))
             cv2.imshow("RGB",image_show)
+            cv2.resizeWindow("RGB", 2400, 960)
             cv2.waitKey(1)
             import time
             time.sleep(0.01)
@@ -912,6 +995,17 @@ def run_online4():
     cv2.destroyAllWindows() 
 
 
+
+def xy_line_fit(pose_line,t_past,mov_time=20):
+    x_past = pose_line[:,0]
+    y_past = pose_line[:,1]
+    coeff_x =  polyfit(t_past, x_past,1)    
+    coeff_y =  polyfit(t_past, y_past,1)    
+    fx = poly1d(coeff_x)
+    fy = poly1d(coeff_y)
+    x = fx(t_past[-1]+mov_time)
+    y = fy(t_past[-1]+mov_time)
+    return [x,y]
 if __name__ == '__main__':
     globals()['run_'+args.type]()
 

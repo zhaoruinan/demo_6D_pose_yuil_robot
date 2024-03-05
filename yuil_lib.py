@@ -340,7 +340,7 @@ class Yuil_robot(object):
         pos[3] = pose[3] 
         pos[4] = pose[4] 
         pos[5] = pose[5] 
-        self.nrc_lib.robot_movej(pos,speed,1,80,80,self.robot_name)
+        self.nrc_lib.robot_movej(pos,speed,1,99,99,self.robot_name)
     
     def robot_get_current_xyz_position(self):  # 获取机器人当前坐标
         data = c_double*6

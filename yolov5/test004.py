@@ -30,7 +30,7 @@ weights = "./yolov5/runs/train-seg/exp6/weights/best.pt"
 data = "./yolov5/data/screw_seg.yaml"
 half=False
 augment=False
-view_img=True
+view_img=False
 retina_masks=True
 conf_thres=0.85
 iou_thres=0.9
@@ -86,8 +86,8 @@ class yolo_processor():
         # Inference
         with self.dt[1]:
             visualize =  False
-            print("1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
-            print(im.shape)            
+            #print("1111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
+            #print(im.shape)            
             pred, proto = self.model(im, augment=augment, visualize=visualize)[:2]
 
         # NMS
@@ -127,13 +127,13 @@ class yolo_processor():
                 else:
                     det_t = det[:, 5]
                     one_mask = masks[0]
-                print(one_mask.shape)
-                print(im0.shape)
+                #print(one_mask.shape)
+                #print(im0.shape)
                 one_mask = np.uint8(torch.squeeze(one_mask).detach().cpu().numpy())
                 im_out = cv2.bitwise_and(im0,im0, mask = one_mask)
                 im_out[np.where(one_mask ==0)]=[255, 255, 255]
                 
-                print(im_out.shape)
+                #print(im_out.shape)
                 annotator.masks(
                     masks,
                     colors=[colors(x, True) for x in det_t],

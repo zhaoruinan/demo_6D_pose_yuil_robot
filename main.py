@@ -79,8 +79,13 @@ def test3():
 def test4():
     real_robot = Yuil_robot()
     sim = robot_sim()
+    real_robot.gripper_open()
+
+    time.sleep(2)
     real_robot.go_home(95)
     time.sleep(10)
+
+    real_robot.gripper_close()
     dh_params = np.array([[0.138, 0.,  0.5*pi, 0],
                               [0., 0.42135, 0., 0.5 * pi],
                               [0., 0.40315, 0., -0.5 * pi],
@@ -131,7 +136,7 @@ def test4():
             pose_set = np.frombuffer(pose, dtype=np.float64)
             print(f"Received {pose!r}")
             print(pose_set)
-            real_robot.xyz_move(pose_set,90)
+            real_robot.xyz_move(pose_set,99)
 
             pos_j = real_robot.robot_get_current_position()
             pos_j = np.array([pos_j[0],pos_j[1],pos_j[2],pos_j[3],pos_j[4],pos_j[5]])
