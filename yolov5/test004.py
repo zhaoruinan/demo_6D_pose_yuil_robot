@@ -26,7 +26,7 @@ def remove_random_element(tensor):
         return None
 
 dnn=False
-weights = "./yolov5/runs/train-seg/exp6/weights/best.pt"
+weights = "./yolov5/runs/train-seg/exp11/weights/best.pt"
 data = "./yolov5/data/screw_seg.yaml"
 half=False
 augment=False
